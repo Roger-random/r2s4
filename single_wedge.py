@@ -28,13 +28,13 @@ Single Wedge
 This file is intended for use in CQ-Editor and visualize a single wedge of
 the spent spool storage system with given parameters.
 """
+import math
 import r2s4
 
-#######################################################################
-#
-#  How big of a wedge we want in degrees
-#
-wedge_size = 32.8
+# Calculate spool inner radius from measuring circumference of spool center
+#spool_inner_circumference = 283 # MH Build
+spool_inner_circumference = 347 # Filament PM
+inner_radius = spool_inner_circumference / (math.pi*2)
 
 #######################################################################
 #
@@ -43,21 +43,29 @@ wedge_size = 32.8
 #spool_height = 55 # MH Build
 spool_height = 70 # Filament PM
 
+#######################################################################
+#
+#  How big of a wedge we want in degrees
+#
+wedge_size = 30
 
 show_object(
     r2s4.build_base(
+        inner_radius,
         spool_height,
         wedge_size),
     options = {"alpha":0.5, "color":"green"})
 
 show_object(
     r2s4.build_placeholder(
+        inner_radius,
         spool_height,
         wedge_size)
     .translate((0,0,-15)),
     options = {"alpha":0.5, "color":"aquamarine"})
 
 show_object(r2s4.build_tray(
+        inner_radius,
         spool_height,
         wedge_size),
     options = {"alpha":0.5, "color":"red"})
