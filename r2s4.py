@@ -393,7 +393,7 @@ def build_label(inner_radius, spool_outer_radius, outer_radius, spool_height, we
                   int(spool_outer_radius),
                   int(spool_height),
                   int(wedge_size)),
-              6,-0.25, kind='bold')
+              4,-0.25, kind='bold')
         )
 
 #######################################################################
