@@ -53,13 +53,6 @@ Written in CQ-Editor 0.3.0dev
 import math
 import cadquery as cq
 
-#######################################################################
-#
-#  Dimensions of target spent spool spindle
-#
-#spool_height = 55 # MH Build
-spool_height = 70 # Filament PM
-
 # Calculate spool inner radius from measuring circumference of spool center
 #spool_inner_circumference = 283 # MH Build
 spool_inner_circumference = 347 # Filament PM
@@ -96,8 +89,6 @@ ring_tab_radius = ring_depth/4 # half of ring depth, and this is radius, so divi
 ring_tab_distance = 3 # Degrees
 ring_tab_arm_half = ring_tab_radius/2
 
-height = spool_height - ring_height
-
 # Tray dimensions
 tray_edge_fillet = 2
 tray_top_chamfer = ring_chamfer
@@ -127,7 +118,7 @@ def ring_root_profile():
 #
 # Given a ring root profile, add left and right side rails
 #
-def add_side_rails(base, wedge_size):
+def add_side_rails(base, height, wedge_size):
     for rail_index in (0,1):
         if rail_index == 0:
             mirror = 1
@@ -255,9 +246,11 @@ def build_link_slot_cutter():
 #
 # Build a base for the tray
 #
-def build_base(wedge_size):
+def build_base(spool_height, wedge_size):
+    height = spool_height - ring_height
+
     base = ring_root_profile().revolve(wedge_size, (0,0,0), (0,1,0))
-    base = add_side_rails(base, wedge_size)
+    base = add_side_rails(base, height, wedge_size)
     base = base + build_outer_fence(wedge_size)
     base = base + build_link_tab(wedge_size)
     base = base - build_link_slot_cutter()
@@ -282,13 +275,13 @@ def build_base(wedge_size):
 # A placeholder segment is the base but with side # rails and fence
 # cut off. Used to hold the ring together in absence of tray+base
 #
-def build_placeholder(wedge_size):
+def build_placeholder(spool_height, wedge_size):
     ring_root_keep = ring_root_profile().revolve(360, (0,0,0), (0,1,0))
-    placeholder = build_base(wedge_size=wedge_size).intersect(ring_root_keep)
+    placeholder = build_base(spool_height,wedge_size).intersect(ring_root_keep)
 
     return placeholder
 
-def chamfer_tray_radial_edges(tray, wedge_size):
+def chamfer_tray_radial_edges(tray, height, wedge_size):
     for edge_index in (0,1):
         if edge_index == 0:
             mirror = 1
@@ -324,7 +317,7 @@ def chamfer_tray_radial_edges(tray, wedge_size):
 #
 # Add handle to tray
 #
-def add_handle(tray, wedge_size):
+def add_handle(tray, height, wedge_size):
     # Constant parameters
     handle_width_half = 2
 
@@ -362,7 +355,7 @@ def add_handle(tray, wedge_size):
 # Cut small ribs in the side of the tray as reinforcement
 # Critical to prevent flat sides warping under vase mode printing.
 #
-def cut_reinforcement_ribs(tray, wedge_size):
+def cut_reinforcement_ribs(tray, height, wedge_size):
     # Constant parameters
     rib_spacing_target=7.5
     rib_size_bottom = 3
@@ -392,7 +385,7 @@ def cut_reinforcement_ribs(tray, wedge_size):
 #
 # Create the text label to be embossed on the bottom of the tray
 #
-def build_label(wedge_size):
+def build_label(spool_height, wedge_size):
     return (
         cq.Workplane("XY")
         .transformed(rotate=cq.Vector(180, 0, -wedge_size/2))
@@ -411,7 +404,8 @@ def build_label(wedge_size):
 # A placeholder segment is the base but with side # rails and fence
 # cut off. Used to hold the ring together in absence of tray+base
 #
-def build_tray(wedge_size):
+def build_tray(spool_height, wedge_size):
+    height = spool_height - ring_height
     tray = (
         cq.Workplane("XZ")
         .lineTo(inner_radius,height-tray_top_chamfer-additional_clearance,True)
@@ -431,9 +425,9 @@ def build_tray(wedge_size):
     tray = tray.faces("<Y").workplane(offset=-additional_clearance).split(keepBottom=True)
     tray = tray.edges("|Z").fillet(tray_edge_fillet)
 
-    tray = chamfer_tray_radial_edges(tray, wedge_size)
-    tray = add_handle(tray, wedge_size)
-    tray = cut_reinforcement_ribs(tray, wedge_size)
-    tray = tray - build_label(wedge_size)
+    tray = chamfer_tray_radial_edges(tray, height, wedge_size)
+    tray = add_handle(tray, height, wedge_size)
+    tray = cut_reinforcement_ribs(tray, height, wedge_size)
+    tray = tray - build_label(spool_height, wedge_size)
 
     return tray

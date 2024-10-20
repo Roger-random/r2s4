@@ -36,17 +36,28 @@ import r2s4
 #
 wedge_size = 32.8
 
+#######################################################################
+#
+#  Dimensions of target spent spool spindle
+#
+#spool_height = 55 # MH Build
+spool_height = 70 # Filament PM
+
+
 show_object(
     r2s4.build_base(
-        wedge_size = wedge_size),
+        spool_height,
+        wedge_size),
     options = {"alpha":0.5, "color":"green"})
 
 show_object(
     r2s4.build_placeholder(
-        wedge_size = wedge_size)
+        spool_height,
+        wedge_size)
     .translate((0,0,-15)),
     options = {"alpha":0.5, "color":"aquamarine"})
 
 show_object(r2s4.build_tray(
-        wedge_size = wedge_size),
+        spool_height,
+        wedge_size),
     options = {"alpha":0.5, "color":"red"})
