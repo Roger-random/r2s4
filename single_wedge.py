@@ -62,7 +62,8 @@ show_object(
         inner_radius,
         spool_outer_radius,
         spool_height,
-        wedge_size),
+        wedge_size
+        ).rotate((0,0,0),(0,0,1),-wedge_size/2),
     options = {"alpha":0.5, "color":"green"})
 
 show_object(
@@ -70,7 +71,8 @@ show_object(
         inner_radius,
         spool_outer_radius,
         spool_height,
-        wedge_size)
+        wedge_size
+        ).rotate((0,0,0),(0,0,1),-wedge_size/2)
     .translate((0,0,-15)),
     options = {"alpha":0.5, "color":"aquamarine"})
 
@@ -78,5 +80,6 @@ show_object(r2s4.build_tray(
         inner_radius,
         spool_outer_radius,
         spool_height,
-        wedge_size),
+        wedge_size
+        ).rotate((0,0,0),(0,0,1),-wedge_size/2),
     options = {"alpha":0.5, "color":"red"})
