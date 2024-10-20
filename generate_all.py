@@ -89,7 +89,7 @@ for spool in spools:
             spool["inner"],
             spool["outer"],
             spool["height"],
-            size).rotate((0,0,0),(0,0,1),-90-size/2)
+            size).rotate((0,0,0),(0,0,1),-45-size/2)
         exporters.export(test_tray, filename)
 
         filename = "{:s}/tray_{:d}.stl".format(subdirectory, size)
@@ -98,8 +98,8 @@ for spool in spools:
             spool["inner"],
             spool["outer"],
             spool["height"],
-            size).rotate((0,0,0),(0,0,1),-90-size/2)
-        exporters.export(test_tray, filename, tolerance=25e-5)
+            size).rotate((0,0,0),(0,0,1),-45-size/2)
+        exporters.export(test_tray, filename, tolerance=5e-4)
 
         filename = "{:s}/placeholder_{:d}.stl".format(subdirectory, size)
         print(filename)
@@ -107,5 +107,5 @@ for spool in spools:
             spool["inner"],
             spool["outer"],
             spool["height"],
-            size).rotate((0,0,0),(0,0,1),-90-size/2)
+            size).rotate((0,0,0),(0,0,1),-45-size/2)
         exporters.export(test_tray, filename)
