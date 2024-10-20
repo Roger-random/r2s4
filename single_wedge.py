@@ -36,6 +36,10 @@ import r2s4
 spool_inner_circumference = 347 # Filament PM
 inner_radius = spool_inner_circumference / (math.pi*2)
 
+# Outer spool diameter is easier to measure directly
+spool_outer_diameter = 200 # MH Build, Filament PM
+spool_outer_radius = spool_outer_diameter / 2
+
 #######################################################################
 #
 #  Dimensions of target spent spool spindle
@@ -49,9 +53,14 @@ spool_height = 70 # Filament PM
 #
 wedge_size = 30
 
+#######################################################################
+#
+#  Build and show
+#
 show_object(
     r2s4.build_base(
         inner_radius,
+        spool_outer_radius,
         spool_height,
         wedge_size),
     options = {"alpha":0.5, "color":"green"})
@@ -59,6 +68,7 @@ show_object(
 show_object(
     r2s4.build_placeholder(
         inner_radius,
+        spool_outer_radius,
         spool_height,
         wedge_size)
     .translate((0,0,-15)),
@@ -66,6 +76,7 @@ show_object(
 
 show_object(r2s4.build_tray(
         inner_radius,
+        spool_outer_radius,
         spool_height,
         wedge_size),
     options = {"alpha":0.5, "color":"red"})
