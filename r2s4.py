@@ -50,7 +50,6 @@ and can be adjusted but interactions can be unpredictable.
 Written in CQ-Editor 0.3.0dev
 
 """
-import math
 import cadquery as cq
 
 #######################################################################
@@ -358,7 +357,7 @@ def cut_reinforcement_ribs(tray, inner_radius, outer_radius, height, wedge_size)
 
     # Derived parameters
     rib_span = int(outer_radius-beyond_edge-inner_radius)
-    rib_count = math.floor(rib_span / rib_spacing_target)
+    rib_count = int(rib_span / rib_spacing_target)
     rib_spacing = int(rib_span / rib_count)
 
     for rib_angle in (0,wedge_size):
