@@ -357,16 +357,16 @@ def cut_reinforcement_ribs(tray, inner_radius, outer_radius, height, wedge_size)
     rib_size_top = 1
 
     # Derived parameters
-    rib_span = outer_radius-beyond_edge-inner_radius
+    rib_span = int(outer_radius-beyond_edge-inner_radius)
     rib_count = math.floor(rib_span / rib_spacing_target)
-    rib_spacing = rib_span / rib_count
+    rib_spacing = int(rib_span / rib_count)
 
     for rib_angle in (0,wedge_size):
-        for rib_index in range(1, rib_count+1, 1):
+        for rib_radius in range(rib_spacing, rib_span, rib_spacing):
             rib = (
                 cq.Workplane("XY")
                 .transformed(rotate=cq.Vector(0,0,rib_angle))
-                .transformed(offset = cq.Vector(inner_radius + rib_index*rib_spacing, 0, 0))
+                .transformed(offset = cq.Vector(inner_radius + rib_radius, 0, 0))
                 .polygon(6, rib_size_bottom, circumscribed=True)
                 .workplane(offset=height)
                 .polygon(6, rib_size_top, circumscribed=True)
@@ -402,7 +402,7 @@ def build_label(inner_radius, spool_outer_radius, outer_radius, spool_height, we
 # A placeholder segment is the base but with side # rails and fence
 # cut off. Used to hold the ring together in absence of tray+base
 #
-def build_tray(inner_radius, spool_outer_radius, spool_height, wedge_size):
+def build_tray(inner_radius, spool_outer_radius, spool_height, wedge_size, label = True):
     outer_radius = spool_outer_radius + beyond_edge
     height = spool_height - ring_height
     tray = (
@@ -428,6 +428,7 @@ def build_tray(inner_radius, spool_outer_radius, spool_height, wedge_size):
     tray = add_handle(tray, outer_radius, height, wedge_size)
     tray = cut_reinforcement_ribs(tray, inner_radius, outer_radius, height, wedge_size)
     # Label causes MatterControl slicer to create phantom first layer. PrusaSlicer OK.
-    # tray = tray - build_label(inner_radius, spool_outer_radius, outer_radius, spool_height, wedge_size)
+    if label:
+        tray = tray - build_label(inner_radius, spool_outer_radius, outer_radius, spool_height, wedge_size)
 
     return tray
