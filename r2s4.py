@@ -183,7 +183,7 @@ def build_outer_fence():
         cq.Workplane("XZ")
         .transformed(rotate=cq.Vector(0,angle/2,0))
         .transformed(offset = cq.Vector(
-            outer_radius-handle_sphere_size+handle_cut_depth, ring_height/2, 0))
+            outer_radius-handle_sphere_size+handle_cut_depth/2, ring_height/2, 0))
         .sphere(handle_sphere_size)
         )
     fence_tab_keep = (
@@ -401,6 +401,24 @@ def cut_reinforcement_ribs(tray):
 
 #######################################################################
 #
+# Create the text label to be embossed on the bottom of the tray
+#
+def build_label():
+    return (
+        cq.Workplane("XY")
+        .transformed(rotate=cq.Vector(180, 0, -angle/2))
+        .transformed(offset = cq.Vector(inner_radius+(outer_radius-inner_radius)/2, 0, 0))
+        .text("R2S4 1.0\n{}.{}.{}.{}"
+              .format(
+                  int(inner_radius),
+                  int(outer_radius),
+                  int(spool_height),
+                  int(angle)),
+              6,-0.25, kind='bold')
+        )
+
+#######################################################################
+#
 # A placeholder segment is the base but with side # rails and fence
 # cut off. Used to hold the ring together in absence of tray+base
 #
@@ -427,6 +445,7 @@ def build_tray():
     tray = chamfer_tray_radial_edges(tray)
     tray = add_handle(tray)
     tray = cut_reinforcement_ribs(tray)
+    tray = tray - build_label()
 
     return tray
 
