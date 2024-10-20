@@ -98,8 +98,8 @@ for spool in spools:
             spool["inner"],
             spool["outer"],
             spool["height"],
-            size, label=False).rotate((0,0,0),(0,0,1),-90-size/2)
-        exporters.export(test_tray, filename, tolerance=1e-4)
+            size).rotate((0,0,0),(0,0,1),-90-size/2)
+        exporters.export(test_tray, filename, tolerance=25e-5)
 
         filename = "{:s}/placeholder_{:d}.stl".format(subdirectory, size)
         print(filename)
