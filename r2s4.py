@@ -381,10 +381,13 @@ def cut_reinforcement_ribs(tray, inner_radius, outer_radius, height, wedge_size)
 # Create the text label to be embossed on the bottom of the tray
 #
 def build_label(inner_radius, spool_outer_radius, outer_radius, spool_height, wedge_size):
+    inner_edge = inner_radius + ring_depth + ring_height
+    outer_edge = outer_radius - latch_depth
+    text_center = inner_edge + (outer_edge-inner_edge)/2
     return (
         cq.Workplane("XY")
         .transformed(rotate=cq.Vector(180, 0, -wedge_size/2))
-        .transformed(offset = cq.Vector(inner_radius+(outer_radius-inner_radius)/2, 0, 0))
+        .transformed(offset = cq.Vector(text_center, 0, 0))
         .text("R2S4 1.0\n{} {} {} {}"
               .format(
                   int(inner_radius),
@@ -424,6 +427,7 @@ def build_tray(inner_radius, spool_outer_radius, spool_height, wedge_size):
     tray = chamfer_tray_radial_edges(tray, outer_radius, height, wedge_size)
     tray = add_handle(tray, outer_radius, height, wedge_size)
     tray = cut_reinforcement_ribs(tray, inner_radius, outer_radius, height, wedge_size)
-    tray = tray - build_label(inner_radius, spool_outer_radius, outer_radius, spool_height, wedge_size)
+    # Label causes MatterControl slicer to create phantom first layer. PrusaSlicer OK.
+    # tray = tray - build_label(inner_radius, spool_outer_radius, outer_radius, spool_height, wedge_size)
 
     return tray
