@@ -283,8 +283,6 @@ def build_base():
 
     return base
 
-show_object(build_base(), options = {"alpha":0.5, "color":"green"})
-
 #######################################################################
 #
 # A placeholder segment is the base but with side # rails and fence
@@ -295,9 +293,6 @@ def build_placeholder():
     placeholder = build_base().intersect(ring_root_keep)
 
     return placeholder
-
-show_object(build_placeholder().translate((0,0,-ring_height*2)),
-            options = {"alpha":0.5, "color":"aquamarine"})
 
 def chamfer_tray_radial_edges(tray):
     for edge_index in (0,1):
@@ -448,5 +443,3 @@ def build_tray():
     tray = tray - build_label()
 
     return tray
-
-show_object(build_tray(), options = {"alpha":0.5, "color":"red"})
