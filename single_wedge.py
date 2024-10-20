@@ -30,9 +30,23 @@ the spent spool storage system with given parameters.
 """
 import r2s4
 
-show_object(r2s4.build_base(), options = {"alpha":0.5, "color":"green"})
+#######################################################################
+#
+#  How big of a wedge we want in degrees
+#
+wedge_size = 32.8
 
-show_object(r2s4.build_placeholder().translate((0,0,-15)),
-                options = {"alpha":0.5, "color":"aquamarine"})
+show_object(
+    r2s4.build_base(
+        wedge_size = wedge_size),
+    options = {"alpha":0.5, "color":"green"})
 
-show_object(r2s4.build_tray(), options = {"alpha":0.5, "color":"red"})
+show_object(
+    r2s4.build_placeholder(
+        wedge_size = wedge_size)
+    .translate((0,0,-15)),
+    options = {"alpha":0.5, "color":"aquamarine"})
+
+show_object(r2s4.build_tray(
+        wedge_size = wedge_size),
+    options = {"alpha":0.5, "color":"red"})

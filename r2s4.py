@@ -55,12 +55,6 @@ import cadquery as cq
 
 #######################################################################
 #
-#  How big of a wedge we want in degrees
-#
-angle = 15
-
-#######################################################################
-#
 #  Dimensions of target spent spool spindle
 #
 #spool_height = 55 # MH Build
@@ -133,7 +127,7 @@ def ring_root_profile():
 #
 # Given a ring root profile, add left and right side rails
 #
-def add_side_rails(base):
+def add_side_rails(base, wedge_size):
     for rail_index in (0,1):
         if rail_index == 0:
             mirror = 1
@@ -142,7 +136,7 @@ def add_side_rails(base):
 
         rail = (
             cq.Workplane("YZ")
-            .transformed(rotate=cq.Vector(0,angle*rail_index,0))
+            .transformed(rotate=cq.Vector(0,wedge_size*rail_index,0))
             .lineTo(0,ring_height)
             .lineTo((ring_height*mirror)/2,0)
             .close()
@@ -166,7 +160,7 @@ def add_side_rails(base):
 # Generate the outer fence which keeps the tray from falling out.
 # Intended to be added to a base with side rails.
 #
-def build_outer_fence():
+def build_outer_fence(wedge_size):
     # Add a short fence to keep tray from falling out too easily
     fence = (
         cq.Workplane("XZ")
@@ -175,13 +169,13 @@ def build_outer_fence():
         .lineTo(outer_radius                      ,ring_height)
         .lineTo(outer_radius                      ,0)
         .close()
-        .revolve(angle, (0,0,0), (0,1,0))
+        .revolve(wedge_size, (0,0,0), (0,1,0))
         )
 
     # Tab for holding down the fence during tray removal
     fence_tab_ball = (
         cq.Workplane("XZ")
-        .transformed(rotate=cq.Vector(0,angle/2,0))
+        .transformed(rotate=cq.Vector(0,wedge_size/2,0))
         .transformed(offset = cq.Vector(
             outer_radius-handle_sphere_size+handle_cut_depth/2, ring_height/2, 0))
         .sphere(handle_sphere_size)
@@ -193,7 +187,7 @@ def build_outer_fence():
         .lineTo(outer_radius + handle_sphere_size,ring_height)
         .lineTo(outer_radius + handle_sphere_size,0)
         .close()
-        .revolve(angle, (0,0,0), (0,1,0))
+        .revolve(wedge_size, (0,0,0), (0,1,0))
         )
     return fence + fence_tab_ball.intersect(fence_tab_keep)
 
@@ -209,11 +203,11 @@ def calculate_tab_position_radius():
 # Generate the tab linking segments together, keep this symmetric with
 # slot cutter below.
 #
-def build_link_tab():
+def build_link_tab(wedge_size):
     tab_position_radius = calculate_tab_position_radius()
     tab = (
         cq.Workplane("XY")
-        .transformed(rotate=cq.Vector(0,0,angle+ring_tab_distance))
+        .transformed(rotate=cq.Vector(0,0,wedge_size+ring_tab_distance))
         .transformed(offset = cq.Vector(tab_position_radius, 0, 0))
         .circle(ring_tab_radius)
         .extrude(ring_height)
@@ -221,7 +215,7 @@ def build_link_tab():
     )
     tab_arm = (
         cq.Workplane("XZ")
-        .transformed(rotate=cq.Vector(0,angle-2,0))
+        .transformed(rotate=cq.Vector(0,wedge_size-2,0))
         .lineTo(tab_position_radius-ring_tab_arm_half, 0, True)
         .lineTo(tab_position_radius-ring_tab_arm_half, ring_height)
         .lineTo(tab_position_radius+ring_tab_arm_half, ring_height)
@@ -261,11 +255,11 @@ def build_link_slot_cutter():
 #
 # Build a base for the tray
 #
-def build_base():
-    base = ring_root_profile().revolve(angle, (0,0,0), (0,1,0))
-    base = add_side_rails(base)
-    base = base + build_outer_fence()
-    base = base + build_link_tab()
+def build_base(wedge_size):
+    base = ring_root_profile().revolve(wedge_size, (0,0,0), (0,1,0))
+    base = add_side_rails(base, wedge_size)
+    base = base + build_outer_fence(wedge_size)
+    base = base + build_link_tab(wedge_size)
     base = base - build_link_slot_cutter()
 
     # Chamfer the inner bottom corner because corresponding spool interior is not perfectly square
@@ -274,7 +268,7 @@ def build_base():
         .lineTo(inner_radius+ring_chamfer, 0)
         .lineTo(inner_radius             , ring_chamfer)
         .close()
-        .revolve(angle)
+        .revolve(wedge_size)
         )
     base = base - ring_chamfer_cut
 
@@ -288,13 +282,13 @@ def build_base():
 # A placeholder segment is the base but with side # rails and fence
 # cut off. Used to hold the ring together in absence of tray+base
 #
-def build_placeholder():
+def build_placeholder(wedge_size):
     ring_root_keep = ring_root_profile().revolve(360, (0,0,0), (0,1,0))
-    placeholder = build_base().intersect(ring_root_keep)
+    placeholder = build_base(wedge_size=wedge_size).intersect(ring_root_keep)
 
     return placeholder
 
-def chamfer_tray_radial_edges(tray):
+def chamfer_tray_radial_edges(tray, wedge_size):
     for edge_index in (0,1):
         if edge_index == 0:
             mirror = 1
@@ -304,7 +298,7 @@ def chamfer_tray_radial_edges(tray):
         # Cut top edge for a bit of added strength
         top_edge = (
             cq.Workplane("YZ")
-            .transformed(rotate=cq.Vector(0,angle*edge_index,0))
+            .transformed(rotate=cq.Vector(0,wedge_size*edge_index,0))
             .lineTo(0,height-tray_top_chamfer,True)
             .lineTo(0,height)
             .lineTo(mirror*tray_top_chamfer/2,height)
@@ -316,7 +310,7 @@ def chamfer_tray_radial_edges(tray):
         # Cut bottom edge to fit base
         bottom_edge = (
             cq.Workplane("YZ")
-            .transformed(rotate=cq.Vector(0,angle*edge_index,0))
+            .transformed(rotate=cq.Vector(0,wedge_size*edge_index,0))
             .lineTo(0,(ring_height+additional_clearance))
             .lineTo(((ring_height*mirror/2)+(mirror*additional_clearance)),0)
             .close()
@@ -330,19 +324,19 @@ def chamfer_tray_radial_edges(tray):
 #
 # Add handle to tray
 #
-def add_handle(tray):
+def add_handle(tray, wedge_size):
     # Constant parameters
     handle_width_half = 2
 
     handle_cutout = (
         cq.Workplane("XZ")
-        .transformed(rotate=cq.Vector(0,angle/2,0))
+        .transformed(rotate=cq.Vector(0,wedge_size/2,0))
         .transformed(offset = cq.Vector(outer_radius+handle_sphere_size-handle_cut_depth, height/2, 0))
         .sphere(handle_sphere_size)
         )
     handle_keep = (
         cq.Workplane("XY")
-        .transformed(rotate=cq.Vector(0,0, angle/2))
+        .transformed(rotate=cq.Vector(0,0, wedge_size/2))
         .lineTo(outer_radius - handle_cut_depth,    handle_width_half, True)
         .lineTo(outer_radius + handle_sphere_size,  handle_width_half)
         .lineTo(outer_radius + handle_sphere_size, -handle_width_half)
@@ -354,7 +348,7 @@ def add_handle(tray):
 
     handle_add = (
         cq.Workplane("XZ")
-        .transformed(rotate=cq.Vector(0,angle/2,0))
+        .transformed(rotate=cq.Vector(0,wedge_size/2,0))
         .transformed(offset = cq.Vector(outer_radius-handle_sphere_size+handle_cut_depth, height/2, 0))
         .sphere(handle_sphere_size)
         )
@@ -368,7 +362,7 @@ def add_handle(tray):
 # Cut small ribs in the side of the tray as reinforcement
 # Critical to prevent flat sides warping under vase mode printing.
 #
-def cut_reinforcement_ribs(tray):
+def cut_reinforcement_ribs(tray, wedge_size):
     # Constant parameters
     rib_spacing_target=7.5
     rib_size_bottom = 3
@@ -379,7 +373,7 @@ def cut_reinforcement_ribs(tray):
     rib_count = math.floor(rib_span / rib_spacing_target)
     rib_spacing = rib_span / rib_count
 
-    for rib_angle in (0,angle):
+    for rib_angle in (0,wedge_size):
         for rib_index in range(1, rib_count+1, 1):
             rib = (
                 cq.Workplane("XY")
@@ -398,17 +392,17 @@ def cut_reinforcement_ribs(tray):
 #
 # Create the text label to be embossed on the bottom of the tray
 #
-def build_label():
+def build_label(wedge_size):
     return (
         cq.Workplane("XY")
-        .transformed(rotate=cq.Vector(180, 0, -angle/2))
+        .transformed(rotate=cq.Vector(180, 0, -wedge_size/2))
         .transformed(offset = cq.Vector(inner_radius+(outer_radius-inner_radius)/2, 0, 0))
         .text("R2S4 1.0\n{}.{}.{}.{}"
               .format(
                   int(inner_radius),
                   int(outer_radius),
                   int(spool_height),
-                  int(angle)),
+                  int(wedge_size)),
               6,-0.25, kind='bold')
         )
 
@@ -417,7 +411,7 @@ def build_label():
 # A placeholder segment is the base but with side # rails and fence
 # cut off. Used to hold the ring together in absence of tray+base
 #
-def build_tray():
+def build_tray(wedge_size):
     tray = (
         cq.Workplane("XZ")
         .lineTo(inner_radius,height-tray_top_chamfer-additional_clearance,True)
@@ -430,16 +424,16 @@ def build_tray():
         .lineTo(inner_radius + ring_depth + ring_height + additional_clearance, 0)
         .lineTo(inner_radius + additional_clearance, ring_depth+ring_height)
         .close()
-        .revolve(angle, (0,0,0), (0,1,0))
+        .revolve(wedge_size, (0,0,0), (0,1,0))
         )
 
     # Slice off a tiny bit for clearance
     tray = tray.faces("<Y").workplane(offset=-additional_clearance).split(keepBottom=True)
     tray = tray.edges("|Z").fillet(tray_edge_fillet)
 
-    tray = chamfer_tray_radial_edges(tray)
-    tray = add_handle(tray)
-    tray = cut_reinforcement_ribs(tray)
-    tray = tray - build_label()
+    tray = chamfer_tray_radial_edges(tray, wedge_size)
+    tray = add_handle(tray, wedge_size)
+    tray = cut_reinforcement_ribs(tray, wedge_size)
+    tray = tray - build_label(wedge_size)
 
     return tray
