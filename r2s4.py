@@ -419,10 +419,7 @@ def build_tray(inner_radius, spool_outer_radius, spool_height, wedge_size, label
         .revolve(wedge_size, (0,0,0), (0,1,0))
         )
 
-    # Slice off a tiny bit for clearance
-    tray = tray.faces("<Y").workplane(offset=-additional_clearance).split(keepBottom=True)
     tray = tray.edges("|Z").fillet(tray_edge_fillet)
-
     tray = chamfer_tray_radial_edges(tray, outer_radius, height, wedge_size)
     tray = add_handle(tray, outer_radius, height, wedge_size)
     tray = cut_reinforcement_ribs(tray, inner_radius, outer_radius, height, wedge_size)
