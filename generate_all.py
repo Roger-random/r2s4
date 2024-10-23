@@ -64,6 +64,9 @@ spools = (
 # Sizes to generate for each type of spool
 sizes = (15, 30, 45, 60, 90, 120)
 
+# Tray wall thicknesses is generated as multiple of nozzle diameter
+nozzle_diameter = 0.4
+
 # Create output directory if not already exist (should be rare)
 if not os.path.exists(output_root):
     os.mkdir(output_root)
@@ -92,14 +95,23 @@ for spool in spools:
             size).rotate((0,0,0),(0,0,1),-45-size/2)
         exporters.export(test_tray, filename)
 
-        filename = "{:s}/tray_{:d}.stl".format(subdirectory, size)
-        print(filename)
-        test_tray = r2s4.build_tray(
-            spool["inner"],
-            spool["outer"],
-            spool["height"],
-            size).rotate((0,0,0),(0,0,1),-45-size/2)
-        exporters.export(test_tray, filename, tolerance=5e-4)
+        for wall in range(1, 5):
+            filename = "{:s}/tray_{:d}_{:d}wall.stl".format(subdirectory, size, wall)
+            if wall == 1:
+                # Generates a solid for vase mode printing, resulting wall thickness
+                # equal to nozzle diameter
+                wall_thickness = 0
+            else:
+                wall_thickness = wall*nozzle_diameter
+            print(filename)
+            test_tray = r2s4.build_tray(
+                spool["inner"],
+                spool["outer"],
+                spool["height"],
+                size,
+                wall_thickness
+                ).rotate((0,0,0),(0,0,1),-45-size/2)
+            exporters.export(test_tray, filename)
 
         filename = "{:s}/placeholder_{:d}.stl".format(subdirectory, size)
         print(filename)

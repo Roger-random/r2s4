@@ -401,7 +401,7 @@ def build_label(inner_radius, spool_outer_radius, outer_radius, spool_height, we
 # A placeholder segment is the base but with side # rails and fence
 # cut off. Used to hold the ring together in absence of tray+base
 #
-def build_tray(inner_radius, spool_outer_radius, spool_height, wedge_size, label = True):
+def build_tray(inner_radius, spool_outer_radius, spool_height, wedge_size, wall_thickness=0, label = True):
     outer_radius = spool_outer_radius + beyond_edge
     height = spool_height - ring_height
     tray = (
@@ -423,6 +423,10 @@ def build_tray(inner_radius, spool_outer_radius, spool_height, wedge_size, label
     tray = chamfer_tray_radial_edges(tray, outer_radius, height, wedge_size)
     tray = add_handle(tray, outer_radius, height, wedge_size)
     tray = cut_reinforcement_ribs(tray, inner_radius, outer_radius, height, wedge_size)
+    # Thickness zero generates a solid for printing in vase mode. Otherwise
+    # generates a tray with specified wall thickness that is printed normally
+    if wall_thickness > 0:
+        tray = tray.faces("+Z").shell(-wall_thickness)
     # Label causes MatterControl slicer to create phantom first layer. PrusaSlicer OK.
     if label:
         tray = tray - build_label(inner_radius, spool_outer_radius, outer_radius, spool_height, wedge_size)
