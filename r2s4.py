@@ -76,6 +76,10 @@ beyond_edge = 10
 ring_depth = 6
 ring_height = 4
 ring_chamfer = 2 # Because spool inner corner is probably not perfectly square
+ring_tab_radius = (ring_depth+ring_height-ring_chamfer)/2 - nozzle_diameter*4
+ring_tab_distance = 3 # Degrees
+ring_tab_arm_half = ring_tab_radius * 0.5
+ring_tab_slot_half = ring_tab_arm_half + nozzle_diameter
 
 # Tray dimensions
 tray_edge_fillet = 2
@@ -171,115 +175,43 @@ def build_outer_fence(outer_radius, wedge_size):
 
 #######################################################################
 #
-# Utility functions for building interlink claws
+# Position (in terms of radius) for the tab/slot connecting segments
 #
-def build_partial_ring_rect(radius_inner, radius_outer, angle_start, angle_end):
-    return build_partial_ring_parallelgram(
-        radius_inner,
-        radius_outer,
-        angle_start,
-        angle_start,
-        angle_end,
-        angle_end
-    )
-
-def build_partial_ring_parallelgram(radius_inner, radius_outer, angle_start_inner, angle_start_outer, angle_end_inner, angle_end_outer):
-    return (
-        cq.Workplane("XY")
-        .polarLineTo(radius_inner, angle_start_inner, True)
-        .polarLineTo(radius_inner, angle_end_inner)
-        .polarLineTo(radius_outer, angle_end_outer)
-        .polarLineTo(radius_outer, angle_start_outer)
-        .close()
-        .workplane(offset=ring_height)
-        .polarLineTo(radius_inner - ring_height, angle_start_inner, True)
-        .polarLineTo(radius_inner - ring_height, angle_end_inner)
-        .polarLineTo(radius_outer - ring_height, angle_end_outer)
-        .polarLineTo(radius_outer - ring_height, angle_start_outer)
-        .close()
-        .loft()
-    )
+def calculate_tab_position_radius(inner_radius):
+    return inner_radius+ring_depth/2+ring_chamfer/2-ring_height/2
 
 #######################################################################
 #
-# For purposes of linking segments together, add claws (and cut clearance
-# for them to link up.)
+# Generate the tab linking segments together, keep this symmetric with
+# slot cutter below.
 #
-def interlink_claws(base, inner_radius, wedge_size):
-    # Ring claw needs to leave room for side rail attachment
-    ring_claw_thickness = nozzle_diameter*4
-    ring_claw_span = 2 # Degrees
-    ring_claw_rake = 0.5 # degrees
-    ring_claw_gap = 0.5 # Degrees TODO calculate from inner_radius and nozzle_diameter.
+def add_link_tab(base, inner_radius, wedge_size):
+    tab_position_radius = calculate_tab_position_radius(inner_radius)
 
-    claw_outer_radius = inner_radius + ring_depth + ring_height - nozzle_diameter*4
+    # Add tab and arm
+    tab = (
+        cq.Workplane("XY")
+        .transformed(rotate=cq.Vector(0,0,wedge_size+ring_tab_distance))
+        .transformed(offset = cq.Vector(tab_position_radius+ring_height, 0, 0))
+        .circle(ring_tab_radius)
+        .workplane(offset=ring_height)
+        .transformed(offset = cq.Vector(-ring_height, 0, 0))
+        .circle(ring_tab_radius)
+        .loft()
+    )
+    base = base+tab
 
-    claw_slot_outer = build_partial_ring_rect(
-        inner_radius + ring_chamfer + ring_claw_thickness,
-        claw_outer_radius,
-        0,
-        ring_claw_span+ring_claw_gap
+    tab_arm = (
+        cq.Workplane("XZ")
+        .transformed(rotate=cq.Vector(0,wedge_size-2,0))
+        .lineTo(tab_position_radius-ring_tab_arm_half+ring_height, 0, True)
+        .lineTo(tab_position_radius-ring_tab_arm_half,             ring_height)
+        .lineTo(tab_position_radius+ring_tab_arm_half,             ring_height)
+        .lineTo(tab_position_radius+ring_tab_arm_half+ring_height, 0)
+        .close()
+        .revolve(ring_tab_distance+2)
     )
-    base = base - claw_slot_outer
-
-    claw_arm_outer = build_partial_ring_rect(
-        claw_outer_radius - nozzle_diameter - ring_claw_thickness,
-        claw_outer_radius - nozzle_diameter,
-        wedge_size,
-        wedge_size + ring_claw_span
-    )
-    base = base + claw_arm_outer
-
-    claw_slot_inner = build_partial_ring_rect(
-        inner_radius + ring_chamfer,
-        claw_outer_radius  - nozzle_diameter - ring_claw_thickness,
-        wedge_size,
-        wedge_size-ring_claw_span-ring_claw_gap
-    )
-    base = base - claw_slot_inner
-
-    claw_arm_inner = build_partial_ring_rect(
-        inner_radius + ring_chamfer,
-        inner_radius + ring_chamfer + ring_claw_thickness,
-        0,
-        -ring_claw_span
-    )
-    base = base + claw_arm_inner
-
-    claw_tip_outer = build_partial_ring_parallelgram(
-        claw_outer_radius - nozzle_diameter - ring_claw_thickness,
-        inner_radius + ring_chamfer + ring_claw_thickness,
-        wedge_size + ring_claw_rake,
-        wedge_size - ring_claw_rake,
-        wedge_size + ring_claw_span,
-        wedge_size + ring_claw_span - ring_claw_rake*2
-    )
-    claw_tip_outer_clearance = build_partial_ring_rect(
-        inner_radius + ring_chamfer + ring_claw_thickness + nozzle_diameter,
-        inner_radius,
-        wedge_size - ring_claw_rake,
-        wedge_size + ring_claw_span
-    )
-    claw_tip_outer = claw_tip_outer - claw_tip_outer_clearance
-
-    base = base + claw_tip_outer
-
-    claw_tip_inner = build_partial_ring_parallelgram(
-        inner_radius + ring_chamfer + ring_claw_thickness - 0.1, # 0.1 = hack to workaround seam
-        claw_outer_radius - nozzle_diameter - ring_claw_thickness,
-        -ring_claw_span,
-        -ring_claw_span+ring_claw_rake*2,
-        -ring_claw_rake,
-         ring_claw_rake
-    )
-    claw_tip_inner_clearance = build_partial_ring_rect(
-        claw_outer_radius - nozzle_diameter*2 - ring_claw_thickness,
-        claw_outer_radius,
-        -ring_claw_span,
-        ring_claw_rake
-    )
-    claw_tip_inner = claw_tip_inner - claw_tip_inner_clearance
-    base = base + claw_tip_inner
+    base = base+tab_arm
 
     # Result of extrusion pokes into spool cylinder volume. Cut that off.
     cleanup = (
@@ -293,6 +225,34 @@ def interlink_claws(base, inner_radius, wedge_size):
 
 #######################################################################
 #
+# Generate the tab linking segments together, keep this symmetric with
+# tab above.
+#
+def build_link_slot_cutter(inner_radius):
+    tab_position_radius = calculate_tab_position_radius(inner_radius)
+    slot = (
+        cq.Workplane("XY")
+        .transformed(rotate=cq.Vector(0,0,ring_tab_distance))
+        .transformed(offset = cq.Vector(tab_position_radius+ring_height, 0, 0))
+        .circle(ring_tab_radius)
+        .workplane(offset=ring_height)
+        .transformed(offset = cq.Vector(-ring_height, 0, 0))
+        .circle(ring_tab_radius)
+        .loft()
+    )
+    slot_arm = (
+        cq.Workplane("XZ")
+        .lineTo(tab_position_radius-ring_tab_slot_half+ring_height, 0, True)
+        .lineTo(tab_position_radius-ring_tab_slot_half,             ring_height)
+        .lineTo(tab_position_radius+ring_tab_slot_half,             ring_height)
+        .lineTo(tab_position_radius+ring_tab_slot_half+ring_height, 0)
+        .close()
+        .revolve(ring_tab_distance)
+        )
+    return slot+slot_arm
+
+#######################################################################
+#
 # Build a base for the tray
 #
 def build_base(inner_radius, spool_outer_radius, spool_height, wedge_size):
@@ -302,7 +262,8 @@ def build_base(inner_radius, spool_outer_radius, spool_height, wedge_size):
     base = ring_root_profile(inner_radius).revolve(wedge_size, (0,0,0), (0,1,0))
     base = add_side_rails(base, inner_radius, outer_radius, height, wedge_size)
     base = base + build_outer_fence(outer_radius, wedge_size)
-    base = interlink_claws(base, inner_radius, wedge_size)
+    base = add_link_tab(base, inner_radius, wedge_size)
+    base = base - build_link_slot_cutter(inner_radius)
 
     # Chamfer the inner bottom corner because corresponding spool interior is not perfectly square
     ring_chamfer_cut = (
