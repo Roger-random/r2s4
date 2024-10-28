@@ -46,18 +46,28 @@ output_root = './docs/stl'
 # 2. Inner radius in mm
 # 3. Outer radius in mm
 # 4. Height in mm
+
+# Parameter to help compensate for aging 3D printer inaccuracy
+# 5. Additional clearance, if any, to be added to tight-fitting parts
 spools = (
+    # Settings for Tux Lab, which uses Filament PM spools and print on younger
+    # (more precise) Prusa MK4 and MINI+ printers.
     {
         "name"   : "filament_pm",
         "inner"  : 347 / (math.pi*2),
         "outer"  : 200 / 2,
-        "height" : 70
+        "height" : 70,
+        "additional_clearance" : 0
     },
+    # Settings for home where I use MatterHackers Build series filament
+    # and print on older (less precise) Pulse XE printer requiring
+    # additional clearance.
     {
         "name"   : "matterhackers",
         "inner"  : 283 / (math.pi*2),
         "outer"  : 200 / 2,
-        "height" : 55
+        "height" : 55,
+        "additional_clearance" : 0.1
     },
 )
 
@@ -92,7 +102,9 @@ for spool in spools:
             spool["inner"],
             spool["outer"],
             spool["height"],
-            size).rotate((0,0,0),(0,0,1),-45-size/2)
+            size,
+            additional_clearance=spool["additional_clearance"]
+            ).rotate((0,0,0),(0,0,1),-45-size/2)
         exporters.export(test_tray, filename)
 
         for wall in range(1, 5):
@@ -119,5 +131,7 @@ for spool in spools:
             spool["inner"],
             spool["outer"],
             spool["height"],
-            size).rotate((0,0,0),(0,0,1),-45-size/2)
+            size,
+            additional_clearance=spool["additional_clearance"]
+            ).rotate((0,0,0),(0,0,1),-45-size/2)
         exporters.export(test_tray, filename)

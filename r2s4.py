@@ -52,17 +52,6 @@ Written in CQ-Editor 0.3.0dev
 """
 import cadquery as cq
 
-#######################################################################
-#
-#  Additional space between mating surfaces due to 3D printing inaccuracy.
-#  May require adjustment to fit specific combinations of printer,
-#  filment, print profile, etc.
-#
-#  If base segments don't fit into each other, increase this value.
-#  If they fit too loosely, decrease this value.
-#
-additional_clearance = 0.25
-
 nozzle_diameter = 0.4
 
 #######################################################################
@@ -76,10 +65,6 @@ beyond_edge = 10
 ring_depth = 6
 ring_height = 4
 ring_chamfer = 2 # Because spool inner corner is probably not perfectly square
-ring_tab_radius = (ring_depth+ring_height-ring_chamfer)/2 - nozzle_diameter*4
-ring_tab_distance = 3 # Degrees
-ring_tab_arm_half = ring_tab_radius * 0.5
-ring_tab_slot_half = ring_tab_arm_half + nozzle_diameter
 
 # Tray dimensions
 tray_edge_fillet = 2
@@ -87,7 +72,6 @@ tray_top_chamfer = ring_chamfer
 
 latch_depth = 5
 latch_protrude = 0.5
-latch_gap = latch_protrude+additional_clearance
 
 handle_sphere_size=15
 handle_cut_depth=5
@@ -130,7 +114,7 @@ def add_side_rails(base, inner_radius, outer_radius, height, wedge_size):
     cleanup = (
         cq.Workplane("XY")
         .circle(outer_radius)
-        .circle(inner_radius+additional_clearance)
+        .circle(inner_radius)
         .extrude(height*2,both=True)
         )
     base = base.intersect(cleanup)
@@ -142,7 +126,9 @@ def add_side_rails(base, inner_radius, outer_radius, height, wedge_size):
 # Generate the outer fence which keeps the tray from falling out.
 # Intended to be added to a base with side rails.
 #
-def build_outer_fence(outer_radius, wedge_size):
+def build_outer_fence(outer_radius, wedge_size, additional_clearance):
+    latch_gap = latch_protrude+additional_clearance
+
     # Add a short fence to keep tray from falling out too easily
     fence = (
         cq.Workplane("XZ")
@@ -175,28 +161,24 @@ def build_outer_fence(outer_radius, wedge_size):
 
 #######################################################################
 #
-# Position (in terms of radius) for the tab/slot connecting segments
+# Modify base with linkage to connect multiple units together
 #
-def calculate_tab_position_radius(inner_radius):
-    return inner_radius+ring_depth/2+ring_chamfer/2-ring_height/2
-
-#######################################################################
-#
-# Generate the tab linking segments together, keep this symmetric with
-# slot cutter below.
-#
-def add_link_tab(base, inner_radius, wedge_size):
-    tab_position_radius = calculate_tab_position_radius(inner_radius)
+def add_links(base, inner_radius, wedge_size, additional_clearance):
+    ring_tab_radius = (ring_depth+ring_height-ring_chamfer)/2 - nozzle_diameter*4
+    ring_tab_distance = 3 # Degrees
+    ring_tab_arm_half = ring_tab_radius * 0.5
+    ring_tab_slot_half = ring_tab_arm_half + nozzle_diameter + additional_clearance*2
+    tab_position_radius = inner_radius+ring_depth/2+ring_chamfer/2-ring_height/2
 
     # Add tab and arm
     tab = (
         cq.Workplane("XY")
         .transformed(rotate=cq.Vector(0,0,wedge_size+ring_tab_distance))
         .transformed(offset = cq.Vector(tab_position_radius+ring_height, 0, 0))
-        .circle(ring_tab_radius)
+        .circle(ring_tab_radius-additional_clearance)
         .workplane(offset=ring_height)
         .transformed(offset = cq.Vector(-ring_height, 0, 0))
-        .circle(ring_tab_radius)
+        .circle(ring_tab_radius-additional_clearance)
         .loft()
     )
     base = base+tab
@@ -216,20 +198,12 @@ def add_link_tab(base, inner_radius, wedge_size):
     # Result of extrusion pokes into spool cylinder volume. Cut that off.
     cleanup = (
         cq.Workplane("XY")
-        .circle(inner_radius+additional_clearance)
+        .circle(inner_radius)
         .extrude(ring_height)
         )
-    base = base -cleanup
+    base = base - cleanup
 
-    return base
-
-#######################################################################
-#
-# Generate the tab linking segments together, keep this symmetric with
-# tab above.
-#
-def build_link_slot_cutter(inner_radius):
-    tab_position_radius = calculate_tab_position_radius(inner_radius)
+    # Cut a slot for the above tab to fit into
     slot = (
         cq.Workplane("XY")
         .transformed(rotate=cq.Vector(0,0,ring_tab_distance))
@@ -249,21 +223,22 @@ def build_link_slot_cutter(inner_radius):
         .close()
         .revolve(ring_tab_distance)
         )
-    return slot+slot_arm
+    base = base - (slot+slot_arm)
+
+    return base
 
 #######################################################################
 #
 # Build a base for the tray
 #
-def build_base(inner_radius, spool_outer_radius, spool_height, wedge_size):
+def build_base(inner_radius, spool_outer_radius, spool_height, wedge_size, additional_clearance = 0):
     outer_radius = spool_outer_radius + beyond_edge
     height = spool_height - ring_height
 
     base = ring_root_profile(inner_radius).revolve(wedge_size, (0,0,0), (0,1,0))
     base = add_side_rails(base, inner_radius, outer_radius, height, wedge_size)
-    base = base + build_outer_fence(outer_radius, wedge_size)
-    base = add_link_tab(base, inner_radius, wedge_size)
-    base = base - build_link_slot_cutter(inner_radius)
+    base = base + build_outer_fence(outer_radius, wedge_size, additional_clearance)
+    base = add_links(base, inner_radius, wedge_size, additional_clearance)
 
     # Chamfer the inner bottom corner because corresponding spool interior is not perfectly square
     ring_chamfer_cut = (
@@ -282,9 +257,9 @@ def build_base(inner_radius, spool_outer_radius, spool_height, wedge_size):
 # A placeholder segment is the base but with side # rails and fence
 # cut off. Used to hold the ring together in absence of tray+base
 #
-def build_placeholder(inner_radius, spool_outer_radius, spool_height, wedge_size):
+def build_placeholder(inner_radius, spool_outer_radius, spool_height, wedge_size, additional_clearance = 0):
     return (
-        build_base(inner_radius, spool_outer_radius, spool_height,wedge_size)
+        build_base(inner_radius, spool_outer_radius, spool_height,wedge_size,additional_clearance)
         .intersect(ring_root_profile(inner_radius).revolve(360, (0,0,0), (0,1,0)))
     )
 

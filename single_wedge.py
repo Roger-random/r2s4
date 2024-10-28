@@ -51,7 +51,31 @@ spool_height = 70 # Filament PM
 #
 #  How big of a wedge we want in degrees
 #
-wedge_size = 30
+wedge_size = 15
+
+#######################################################################
+#
+#  Additional space between mating surfaces due to 3D printing inaccuracy.
+#  May require adjustment to fit specific combinations of printer,
+#  filment, print profile, etc.
+#
+#  Dimensionally perfect printes will generate pieces that fit together
+#  snugly with this value set to zero. This is rare. Due to layer-to-
+#  layer variations, nozzle erosion, etc. Most 3D printers will need a
+#  little extra clearance to fit well.
+#
+#  If base segments don't fit into each other, increase this value.
+#  If they fit too loosely, decrease this value.
+#
+#  Recommend increasing/decreasing in increments of 0.05mm
+#
+#  If fit is still loose at no additional clearance, the printer has an
+#  under-extrusion issue that needs to be investigated.
+#
+#  If fit is still tight at 0.4mm... that's the diameter of the nozzle!
+#  the printer has an accuracy issue that needs to be resolved.
+#
+additional_clearance = 0.1 # mm
 
 #######################################################################
 #
@@ -62,7 +86,8 @@ show_object(
         inner_radius,
         spool_outer_radius,
         spool_height,
-        wedge_size
+        wedge_size,
+        additional_clearance
         ).rotate((0,0,0),(0,0,1),-wedge_size/2),
     options = {"alpha":0.5, "color":"green"})
 
@@ -71,7 +96,8 @@ show_object(
         inner_radius,
         spool_outer_radius,
         spool_height,
-        wedge_size
+        wedge_size,
+        additional_clearance
         ).rotate((0,0,0),(0,0,1),-wedge_size/2)
     .translate((0,0,-15)),
     options = {"alpha":0.5, "color":"aquamarine"})
