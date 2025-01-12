@@ -58,3 +58,8 @@ for a walkthrough and adjust as needed for R2S4.
 * Running under Python 3.12.2
 * CadQuery was installed with mamba 1.5.9 via conda 24.9.2
 * Running within an x86-64 virtual machine running Ubuntu 22.04.5 LTS
+
+# More details about how this project came to be
+
+See my online project notebook
+[New Screwdriver entries tagged with 'r2s4'](https://newscrewdriver.com/tag/r2s4/)
